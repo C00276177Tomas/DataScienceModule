@@ -1,0 +1,123 @@
+---
+title: "SupportVectorMachines"
+output: html_document
+date: "2025-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+install.packages("nycflights13")
+install.packages("e1071")
+install.packages("dplyr")  # For data manipulation
+library(nycflights13)
+library(e1071)
+library(dplyr)
+
+```
+
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+```
+
+
+```{r}
+data("flights")
+df <- flights  # Store in a variable
+head(df)  # View first few rows
+
+```
+
+
+```{r}
+df <- df %>%
+  mutate(delayed = ifelse(dep_delay > 15, "Yes", "No")) %>%
+  select(dep_time, arr_time, air_time, distance, dep_delay, arr_delay, delayed) %>%
+  na.omit()  # Remove missing values
+
+```
+
+
+```{r}
+df$delayed <- as.factor(df$delayed)
+```
+
+
+```{r}
+set.seed(123)  # For reproducibility
+train_index <- sample(1:nrow(df), 0.7 * nrow(df))  # 70% training data
+train_data <- df[train_index, ]
+test_data <- df[-train_index, ]
+```
+
+
+```{r}
+head(train_data)  # View first few rows
+```
+
+```{r}
+head(test_data)
+```
+
+
+```{r}
+svm_model <- svm(delayed ~ ., data = train_data, kernel = "radial")
+```
+
+
+```{r}
+predictions <- predict(svm_model, test_data)
+table(predictions, test_data$delayed)  # Confusion matrix
+```
+```{r}
+install.packages("caret")
+```
+
+```{r}
+library(caret)
+```
+
+
+```{r}
+
+# Create the confusion matrix
+cm <- confusionMatrix(predictions, test_data$delayed)
+
+# Convert confusion matrix to a data frame for ggplot
+cm_table <- as.table(cm)
+cm_df <- as.data.frame(cm_table)
+colnames(cm_df) <- c("Predicted", "Actual", "Count")
+
+# Plot the confusion matrix as a heatmap
+ggplot(cm_df, aes(x = Actual, y = Predicted, fill = Count)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "blue") +
+  geom_text(aes(label = Count), color = "black") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix Heatmap", x = "Actual", y = "Predicted")
+```
+
+
+```{r}
+accuracy <- sum(predictions == test_data$delayed) / nrow(test_data)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
