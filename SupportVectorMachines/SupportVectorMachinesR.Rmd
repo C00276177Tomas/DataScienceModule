@@ -33,6 +33,26 @@ head(df)  # View first few rows
 
 ```
 
+```{r}
+# Select numeric columns
+numeric_columns <- flights[, sapply(flights, is.numeric)]
+
+# Remove columns with zero variance (standard deviation = 0)
+numeric_columns <- numeric_columns[, sapply(numeric_columns, function(x) sd(x, na.rm = TRUE) > 0)]
+
+# Remove rows with missing values in 'dep_delay' and other numeric columns
+valid_data <- flights[!is.na(flights$dep_delay) & complete.cases(numeric_columns), ]
+
+# Compute the correlation between 'dep_delay' and the other numeric columns
+cor_with_target <- cor(valid_data[, sapply(valid_data, is.numeric)], valid_data$dep_delay, use = "complete.obs")
+
+# Check the structure of the correlation result
+print(cor_with_target)
+
+```
+
+
+
 
 ```{r}
 df <- df %>%
@@ -41,6 +61,7 @@ df <- df %>%
   na.omit()  # Remove missing values
 
 ```
+
 
 
 ```{r}
@@ -59,6 +80,36 @@ test_data <- df[-train_index, ]
 ```{r}
 head(train_data)  # View first few rows
 ```
+
+```{r}
+# Load necessary library
+library(ggplot2)
+
+# Assuming 'df' is your full dataset
+
+# Create a scatter plot to compare dep_delay and dep_time
+ggplot(df, aes(x = dep_time, y = dep_delay)) +
+  geom_point(alpha = 0.1, color = "blue") +  # alpha for transparency
+  labs(title = "Comparison of Departure Time vs Departure Delay",
+       x = "Departure Time (minutes)",
+       y = "Departure Delay (minutes)") +
+  theme_minimal()
+
+
+```
+
+
+
+
+```{r}
+ggplot(df, aes(x = distance, y = dep_delay)) +
+  geom_point(alpha = 0.1, color = "blue") +  # alpha for transparency
+  labs(title = "Comparison of Distance vs Departure Delay",
+       x = "Distance (miles)",
+       y = "Departure Delay (minutes)") +
+  theme_minimal()
+```
+
 
 ```{r}
 head(test_data)
