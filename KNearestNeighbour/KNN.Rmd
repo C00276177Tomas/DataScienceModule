@@ -1,0 +1,162 @@
+---
+title: "KNearestNeighbour"
+output: html_document
+date: "2025-02-19"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+wine <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", sep=";")
+
+```
+
+
+
+```{r}
+wine
+```
+
+
+```{r}
+library(class)  # For k-NN
+library(caret)  # For data partitioning
+```
+
+
+
+
+```{r}
+# Load necessary library
+library(ggplot2)
+
+# View the first few rows of the dataset
+head(wine)
+
+# 1. Distribution of Wine Quality (Target Variable)
+ggplot(wine, aes(x = quality)) +
+  geom_bar(fill = "lightblue", color = "black") +
+  labs(title = "Distribution of Wine Quality", x = "Wine Quality", y = "Count") +
+  theme_minimal()
+
+# 2. Alcohol Content compared to Wine Quality (Target Variable)
+ggplot(wine, aes(x = quality, y = alcohol, fill = quality)) +
+  geom_boxplot() +
+  labs(title = "Alcohol Content by Wine Quality", x = "Wine Quality", y = "Alcohol Content") +
+  theme_minimal()
+
+# 3. Boxplot to see the distribution of another feature by Wine Quality
+ggplot(wine, aes(x = quality, y = volatile.acidity, fill = quality)) +
+  geom_boxplot() +
+  labs(title = "Volatile Acidity by Wine Quality", x = "Wine Quality", y = "Volatile Acidity") +
+  theme_minimal()
+
+
+```
+
+```{r}
+# Data Cleaning
+
+# 1. Remove rows with any missing values
+wine_clean <- na.omit(wine)
+
+# 2. Replace NAs in a specific column with the mean of that column (e.g., alcohol) on the wine_clean dataset
+wine_clean$alcohol[is.na(wine_clean$alcohol)] <- mean(wine_clean$alcohol, na.rm = TRUE)
+
+# View the cleaned data
+head(wine_clean)
+
+```
+
+
+```{r}
+# Calculate correlations of all numeric features with 'quality'
+correlations_with_quality <- cor(wine_clean)
+
+# Extract the correlation values with the target 'quality'
+correlation_list <- data.frame(
+  Feature = names(correlations_with_quality[, "quality"]),
+  Correlation = correlations_with_quality[, "quality"]
+)
+
+# Remove 'quality' column from the list
+correlation_list <- correlation_list[correlation_list$Feature != "quality", ]
+
+# Sort the list by correlation values in ascending order
+correlation_list <- correlation_list[order(correlation_list$Correlation), ]
+
+# View the sorted correlation list
+print(correlation_list)
+
+
+```
+
+
+```{r}
+# Remove columns with less than .1 correlation
+
+# wine_clean <- wine_clean[, !(names(wine_clean) %in% c("residual.sugar", "free.sulfur.dioxide", "pH"))]
+
+# wine_clean <- wine_clean[, !(names(wine_clean) %in% c("residual.sugar"))]
+
+# Verify that the columns were removed
+# print(names(wine_clean))
+```
+
+
+
+```{r}
+# Split into train (80%) and test (20%) sets
+set.seed(123)  # For reproducibility
+trainIndex <- createDataPartition(wine$quality, p = 0.8, list = FALSE)
+train_data <- wine_clean[trainIndex, ]
+test_data <- wine_clean[-trainIndex, ]
+
+# Remove rows with any missing values
+train_data <- na.omit(train_data)
+test_data <- na.omit(test_data)
+
+# Extract features (X) and target variable (Y) for training set
+train_X <- train_data[, setdiff(names(train_data), "quality")]  # Exclude the 'quality' column
+train_Y <- train_data$quality  # Target (wine quality)
+
+# Extract features (X) and target variable (Y) for test set
+test_X <- test_data[, setdiff(names(test_data), "quality")]  # Exclude the 'quality' column
+test_Y <- test_data$quality  # Target (wine quality)
+
+# Normalise
+train_X <- scale(train_X)  # Normalize the training data
+test_X <- scale(test_X)    # Normalize the test data
+```
+
+
+
+```{r}
+# Step 1: Use cross-validation to find the best value of k on the training data
+train_control <- trainControl(method = "cv", number = 10)
+knn_model <- train(quality ~ ., data = train_data, method = "knn", trControl = train_control, tuneLength = 10)
+
+# Print the best value of k
+best_k <- knn_model$bestTune$k
+print(paste("Best k: ", best_k))
+```
+
+
+```{r}
+# Train k-NN with k = 7
+pred_Y <- knn(train = train_X, test = test_X, cl = train_Y, k = 15)
+```
+
+
+
+```{r}
+# Evaluate accuracy
+accuracy <- sum(pred_Y == test_Y) / length(test_Y)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+```
+
+
+
+
